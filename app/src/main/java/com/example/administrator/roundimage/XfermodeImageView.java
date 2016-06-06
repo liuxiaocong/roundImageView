@@ -4,15 +4,15 @@ import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.Bitmap;
 import android.graphics.Bitmap.Config;
-import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.RectF;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.util.AttributeSet;
 import android.util.TypedValue;
-import android.view.View;
 import android.widget.ImageView;
 
 /**
@@ -21,8 +21,6 @@ import android.widget.ImageView;
 public class XfermodeImageView extends ImageView {
 
     private int type;
-    private static final int TYPE_CIRCLE = 0;
-    private static final int TYPE_ROUND = 1;
 
     private Bitmap mSrc;
     private int mRadius;
@@ -39,7 +37,23 @@ public class XfermodeImageView extends ImageView {
 
     public XfermodeImageView(Context context, AttributeSet attrs, int defStyle) {
         super(context, attrs, defStyle);
-
+        Drawable drawable = getDrawable();
+        if (drawable != null && drawable instanceof BitmapDrawable) {
+            mSrc = ((BitmapDrawable) drawable).getBitmap();
+        }
+        TypedArray a = context.getTheme().obtainStyledAttributes(attrs,
+                R.styleable.XfermodeImageView, defStyle, 0);
+        int n = a.getIndexCount();
+        for (int i = 0; i < n; i++) {
+            int attr = a.getIndex(i);
+            switch (attr) {
+                case R.styleable.XfermodeImageView_borderRadius:
+                    mRadius = a.getDimensionPixelSize(attr, (int) TypedValue
+                            .applyDimension(TypedValue.COMPLEX_UNIT_DIP, 10f,
+                                    getResources().getDisplayMetrics()));
+                    break;
+            }
+        }
     }
 
     @Override
@@ -84,17 +98,9 @@ public class XfermodeImageView extends ImageView {
 
     @Override
     protected void onDraw(Canvas canvas) {
-        switch (type) {
-            // 如果是TYPE_CIRCLE绘制圆形
-            case TYPE_CIRCLE:
-                int min = Math.min(mWidth, mHeight);
-                mSrc = Bitmap.createScaledBitmap(mSrc, min, min, false);
-                canvas.drawBitmap(createCircleImage(mSrc, min), 0, 0, null);
-                break;
-            case TYPE_ROUND:
-                canvas.drawBitmap(createRoundConerImage(mSrc), 0, 0, null);
-                break;
-        }
+        int min = Math.min(mWidth, mHeight);
+        mSrc = Bitmap.createScaledBitmap(mSrc, min, min, false);
+        canvas.drawBitmap(createRoundCornerImage(mSrc), 0, 0, null);
     }
 
 
@@ -109,7 +115,7 @@ public class XfermodeImageView extends ImageView {
         return target;
     }
 
-    private Bitmap createRoundConerImage(Bitmap source) {
+    private Bitmap createRoundCornerImage(Bitmap source) {
         final Paint paint = new Paint();
         paint.setAntiAlias(true);
         Bitmap target = Bitmap.createBitmap(mWidth, mHeight, Config.ARGB_8888);
